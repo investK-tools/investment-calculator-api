@@ -14,9 +14,18 @@ func main() {
 	server := echo.New()
 
 	server.Use(middleware.RequestLogger())
-	// Enable CORS for the frontend running on http://localhost:3000
+	// Enable CORS for the frontend at https://investment-calculator-alpha-rust.vercel.app.
+	// Include localhost only in development environment (ENV or GO_ENV == "development").
+	origins := []string{"https://investment-calculator-alpha-rust.vercel.app"}
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = os.Getenv("GO_ENV")
+	}
+	if env == "development" {
+		origins = append(origins, "http://localhost:3000")
+	}
 	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,

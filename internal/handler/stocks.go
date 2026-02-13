@@ -22,8 +22,15 @@ func ListStocks(c *echo.Context) error {
 		log.Println("failed to fetch stock list:", err)
 		return c.String(http.StatusBadGateway, "failed to fetch upstream")
 	}
+	// Filter to only include stocks of type "fund"
+	filtered := make([]model.Stock, 0, len(stocks.Stocks))
+	for _, s := range stocks.Stocks {
+		if strings.ToLower(s.Type) == "fund" {
+			filtered = append(filtered, s)
+		}
+	}
 
-	return c.JSON(http.StatusOK, stocks)
+	return c.JSON(http.StatusOK, model.Response{Stocks: filtered})
 }
 
 // GetStocksByIDsHandler proxies requests to the upstream API for the provided ids.
