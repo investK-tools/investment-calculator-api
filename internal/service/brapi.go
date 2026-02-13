@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"invest-simulator/internal/model"
+	"github.com/investK-tools/investment-calculator-api/internal/model"
 )
 
 // BrAPIClient encapsulates HTTP interactions with the brapi.dev service.

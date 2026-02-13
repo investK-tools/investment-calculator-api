@@ -9,8 +9,8 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"invest-simulator/internal/model"
-	"invest-simulator/internal/service"
+	"github.com/investK-tools/investment-calculator-api/internal/model"
+	"github.com/investK-tools/investment-calculator-api/internal/service"
 )
 
 // ListStocks returns the list of available stocks from the upstream API.

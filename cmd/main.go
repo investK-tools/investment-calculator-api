@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"invest-simulator/internal/handler"
+	"github.com/investK-tools/investment-calculator-api/internal/handler"
 )
 
 func main() {
