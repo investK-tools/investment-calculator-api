@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -26,7 +27,12 @@ func main() {
 	routes.GET("/stocks", handler.ListStocks)
 	routes.GET("/dividends/:ids", handler.GetDividendsByIDsHandler)
 
-	if err := server.Start(":1323"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "1323"
+	}
+	addr := ":" + port
+	if err := server.Start(addr); err != nil {
 		server.Logger.Error("failed to start server", "error", err)
 	}
 }
