@@ -16,7 +16,7 @@ func main() {
 	server.Use(middleware.RequestLogger())
 	// Enable CORS for the frontend at https://investment-calculator-alpha-rust.vercel.app.
 	// Include localhost only in development environment (ENV or GO_ENV == "development").
-	origins := []string{"https://investment-calculator-alpha-rust.vercel.app"}
+	origins := []string{"https://www.simuladorinvestimentos.com.br"}
 	env := os.Getenv("ENV")
 	if env == "" {
 		env = os.Getenv("GO_ENV")
