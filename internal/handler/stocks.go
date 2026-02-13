@@ -3,6 +3,9 @@ package handler
 import (
 	"log"
 	"net/http"
+	"os"
+	"encoding/json"
+	"strings"
 
 	"github.com/labstack/echo/v5"
 
@@ -30,15 +33,37 @@ func GetDividendsByIDsHandler(c *echo.Context) error {
 	if ids == "" {
 		return c.String(http.StatusBadRequest, "ids path parameter is required")
 	}
-
-	client := service.NewBrAPIClient("2HnxXZLUA5nvif3ukvxcte")
-	status, contentType, body, err := client.FetchStocksByIDs(ids, c.QueryParams())
+	// Read the local parsed.json file and filter its top-level keys by the provided ids.
+	data, err := os.ReadFile("parsed.json")
 	if err != nil {
-		log.Println("failed to fetch stocks by ids:", err)
-		return c.String(http.StatusBadGateway, "failed to fetch upstream")
+		log.Println("failed to read parsed.json:", err)
+		return c.String(http.StatusInternalServerError, "failed to read parsed.json")
 	}
 
-	// Ensure response is returned verbatim to preserve upstream structure and headers.
+	// Unmarshal into a map so we can pick keys by id.
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(data, &all); err != nil {
+		log.Println("failed to unmarshal parsed.json:", err)
+		return c.String(http.StatusInternalServerError, "failed to parse parsed.json")
+	}
+
+	filtered := make(map[string]json.RawMessage, len(all))
+	for _, id := range strings.Split(ids, ",") {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if v, ok := all[id]; ok {
+			filtered[id] = v
+		}
+	}
+
+	respBytes, err := json.Marshal(filtered)
+	if err != nil {
+		log.Println("failed to marshal filtered response:", err)
+		return c.String(http.StatusInternalServerError, "failed to build response")
+	}
+
 	_ = model.Response{} // keep import usage explicit for clarity
-	return c.Blob(status, contentType, body)
+	return c.Blob(http.StatusOK, "application/json", respBytes)
 }
