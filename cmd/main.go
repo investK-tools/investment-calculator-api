@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 
 	"github.com/investK-tools/investment-calculator-api/internal/handler"
+	"github.com/investK-tools/investment-calculator-api/internal/service"
 )
 
 func main() {
@@ -33,9 +34,17 @@ func main() {
 
 	routes := server.Group("/v1")
 
-	routes.GET("/stocks", handler.ListStocks)
-	routes.GET("/market-rates", handler.GetMarketRates)
-	routes.GET("/dividends/:ids", handler.GetDividendsByIDsHandler)
+	// In-memory BRAPI cache; set CACHE_TTL_STOCKS, CACHE_TTL_DIVIDENDS, or CACHE_TTL_MARKET_RATES to "0" to disable per category.
+	brapi := service.NewCachedBrAPI(
+		service.NewBrAPIClient(os.Getenv("BRAPI_API_KEY")),
+		service.ParseCacheTTL("CACHE_TTL_STOCKS", service.DefaultTTLStocks),
+		service.ParseCacheTTL("CACHE_TTL_DIVIDENDS", service.DefaultTTLDividends),
+		service.ParseCacheTTL("CACHE_TTL_MARKET_RATES", service.DefaultTTLMarketRates),
+	)
+
+	routes.GET("/stocks", handler.ListStocks(brapi))
+	routes.GET("/market-rates", handler.GetMarketRates(brapi))
+	routes.GET("/dividends/:ids", handler.GetDividendsByIDsHandler(brapi))
 
 	port := os.Getenv("PORT")
 	if port == "" {
