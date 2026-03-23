@@ -34,6 +34,7 @@ func main() {
 	routes := server.Group("/v1")
 
 	routes.GET("/stocks", handler.ListStocks)
+	routes.GET("/market-rates", handler.GetMarketRates)
 	routes.GET("/dividends/:ids", handler.GetDividendsByIDsHandler)
 
 	port := os.Getenv("PORT")

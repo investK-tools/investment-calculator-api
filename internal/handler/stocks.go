@@ -15,7 +15,7 @@ import (
 
 // ListStocks returns the list of available stocks from the upstream API.
 func ListStocks(c *echo.Context) error {
-	client := service.NewBrAPIClient("") // no auth required for list endpoint
+	client := service.NewBrAPIClient(os.Getenv("BRAPI_API_KEY"))
 
 	stocks, err := client.FetchStockList()
 	if err != nil {
@@ -33,36 +33,38 @@ func ListStocks(c *echo.Context) error {
 	return c.JSON(http.StatusOK, model.Response{Stocks: filtered})
 }
 
-// GetStocksByIDsHandler proxies requests to the upstream API for the provided ids.
-// It forwards incoming query parameters and ensures dividends=true is present.
+// GetDividendsByIDsHandler returns dividend rows from brapi GET /quote/:ids?dividends=true,
+// shaped as a JSON object keyed by requested ticker (legacy parsed.json fields: pay_date, record_date, price, percent, dividend).
 func GetDividendsByIDsHandler(c *echo.Context) error {
 	ids := c.Param("ids")
 	if ids == "" {
 		return c.String(http.StatusBadRequest, "ids path parameter is required")
 	}
-	// Read the local parsed.json file and filter its top-level keys by the provided ids.
-	data, err := os.ReadFile("parsed.json")
+
+	client := service.NewBrAPIClient(os.Getenv("BRAPI_API_KEY"))
+	bySymbol, err := client.FetchDividendsByIDs(ids, c.QueryParams())
 	if err != nil {
-		log.Println("failed to read parsed.json:", err)
-		return c.String(http.StatusInternalServerError, "failed to read parsed.json")
+		log.Println("failed to fetch dividends:", err)
+		return c.String(http.StatusBadGateway, "failed to fetch upstream")
 	}
 
-	// Unmarshal into a map so we can pick keys by id.
-	var all map[string]json.RawMessage
-	if err := json.Unmarshal(data, &all); err != nil {
-		log.Println("failed to unmarshal parsed.json:", err)
-		return c.String(http.StatusInternalServerError, "failed to parse parsed.json")
-	}
-
-	filtered := make(map[string]json.RawMessage, len(all))
+	filtered := make(map[string]json.RawMessage)
 	for _, id := range strings.Split(ids, ",") {
 		id = strings.TrimSpace(id)
 		if id == "" {
 			continue
 		}
-		if v, ok := all[id]; ok {
-			filtered[id] = v
+		key := strings.ToUpper(id)
+		divs, ok := bySymbol[key]
+		if !ok {
+			continue
 		}
+		raw, err := json.Marshal(divs)
+		if err != nil {
+			log.Println("failed to marshal dividends for", id, ":", err)
+			return c.String(http.StatusInternalServerError, "failed to build response")
+		}
+		filtered[id] = raw
 	}
 
 	respBytes, err := json.Marshal(filtered)
