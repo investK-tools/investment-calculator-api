@@ -7,7 +7,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -196,9 +195,9 @@ type inflationAPIResponse struct {
 }
 
 type inflationPoint struct {
-	Date      string `json:"date"`
-	Value     string `json:"value"`
-	EpochDate int64  `json:"epochDate"`
+	Date      string  `json:"date"`
+	Value     float64 `json:"value"`
+	EpochDate int64   `json:"epochDate"`
 }
 
 // brapi prime-rate /v2/prime-rate (JSON key "prime-rate")
@@ -207,9 +206,9 @@ type primeRateAPIResponse struct {
 }
 
 type primeRatePoint struct {
-	Date      string `json:"date"`
-	Value     string `json:"value"`
-	EpochDate int64  `json:"epochDate"`
+	Date      string  `json:"date"`
+	Value     float64 `json:"value"`
+	EpochDate int64   `json:"epochDate"`
 }
 
 // FetchInflationBrazil returns raw inflation points from brapi /v2/inflation.
@@ -249,8 +248,8 @@ func (b *BrAPIClient) FetchPrimeRate() ([]primeRatePoint, error) {
 }
 
 const (
-	brazilDateLayout     = "02/01/2006"
-	cdiDeltaFromSelicPP  = 0.10 // approximation: CDI typically ~10 b.p. below Selic; not official B3
+	brazilDateLayout    = "02/01/2006"
+	cdiDeltaFromSelicPP = 0.10 // approximation: CDI typically ~10 b.p. below Selic; not official B3
 )
 
 // FetchMarketRates loads the latest IPCA point, Selic from brapi (America/Sao_Paulo for dates),
@@ -303,7 +302,7 @@ func selectIPCALatest(points []inflationPoint) (float64, error) {
 	var bestVal float64
 	var found bool
 	for _, p := range points {
-		v, err := strconv.ParseFloat(p.Value, 64)
+		v := p.Value
 		if err != nil {
 			continue
 		}
@@ -337,10 +336,8 @@ func selectSelicForTodayOrLatest(points []primeRatePoint, now time.Time) (float6
 	var globalVal float64
 	var globalOK bool
 	for _, p := range points {
-		v, err := strconv.ParseFloat(p.Value, 64)
-		if err != nil {
-			continue
-		}
+		v := p.Value
+
 		if !globalOK || p.EpochDate >= globalBestEpoch {
 			globalBestEpoch = p.EpochDate
 			globalVal = v
